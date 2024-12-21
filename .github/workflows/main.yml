@@ -5,10 +5,12 @@ on:
     branches:
       - dev
       - test
+      - master
   push:
     branches:
       - dev
       - test
+      - master
 
 jobs:
   build:
@@ -16,5 +18,21 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Flutter action
-        uses: subosito/flutter-action@v2.18.0
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.28.0-1.0.pre.125
+      - run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Build APK & App Bundle
+        run: flutter build apk
+      - run: flutter build appbundle
