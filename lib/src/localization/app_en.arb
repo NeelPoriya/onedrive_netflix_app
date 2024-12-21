@@ -1,0 +1,6 @@
+{
+  "appTitle": "onedrive_netflix",
+  "@appTitle": {
+    "description": "The title of the application"
+  }
+}

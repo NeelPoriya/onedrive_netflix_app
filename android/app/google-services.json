@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "247327276985",
+    "project_id": "onedrive-netflix-b7034",
+    "storage_bucket": "onedrive-netflix-b7034.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:247327276985:android:24420a354a2a7c08c34068",
+        "android_client_info": {
+          "package_name": "com.example.onedrive_netflix"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "247327276985-jiq2qu7pp5trssedgb1s37cggv8jb4bd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.onedrive_netflix",
+            "certificate_hash": "deab408df0850a7a1f5c16d2adebe95b0d566c20"
+          }
+        },
+        {
+          "client_id": "247327276985-agogkj9jqn5n0f10gdqlgc90217n4he6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQyOZSMQno-Ard0VmE0bl-5fCT5A8r6yY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "247327276985-agogkj9jqn5n0f10gdqlgc90217n4he6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "247327276985-9vt8ieaa3m48ts49f9lnph43g8qgtqvi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.onedriveNetflix"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

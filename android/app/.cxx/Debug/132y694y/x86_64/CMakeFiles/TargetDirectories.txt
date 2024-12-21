@@ -1,0 +1,2 @@
+C:/projects/onedrive_netflix/android/app/.cxx/Debug/132y694y/x86_64/CMakeFiles/edit_cache.dir
+C:/projects/onedrive_netflix/android/app/.cxx/Debug/132y694y/x86_64/CMakeFiles/rebuild_cache.dir
