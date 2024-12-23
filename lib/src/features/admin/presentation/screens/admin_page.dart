@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:onedrive_netflix/src/features/admin/presentation/widgets/accounts_page.dart';
 import 'package:onedrive_netflix/src/features/admin/presentation/widgets/folders_page.dart';
+import 'package:onedrive_netflix/src/features/admin/presentation/widgets/sync_page.dart';
 import 'package:onedrive_netflix/src/features/admin/presentation/widgets/users_page.dart';
-import 'package:onedrive_netflix/src/features/home/presentation/screens/home_page.dart';
+import 'package:onedrive_netflix/src/features/login/services/auth.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
 
 class AdminPage extends StatefulWidget {
@@ -15,10 +16,16 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final PageController _pageController = PageController(initialPage: 1);
-  int _selectedIndex = 1;
+  int _selectedIndex = 3;
+  PageController _pageController = PageController();
   NavigationRailLabelType labelType = NavigationRailLabelType.all;
   double groupAlignment = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _selectedIndex);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +37,11 @@ class _AdminPageState extends State<AdminPage> {
             selectedIndex: _selectedIndex,
             groupAlignment: 0.0,
             onDestinationSelected: (int index) {
-              if (index == 3) {
+              if (index == 4) {
                 context.push(Constants.homeRoute);
               }
 
-              if (index == 4) {
+              if (index == 5) {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -49,9 +56,15 @@ class _AdminPageState extends State<AdminPage> {
                           child: const Text('Cancel'),
                         ),
                         TextButton(
-                          onPressed: () {
-                            context.pop();
-                            context.push(Constants.loginRoute);
+                          onPressed: () async {
+                            final navigator = Navigator.of(context);
+                            final router = GoRouter.of(context);
+                            await GlobalAuthService.instance.signOut();
+
+                            if (!mounted) return;
+
+                            navigator.pop();
+                            router.push(Constants.loginRoute);
                           },
                           child: const Text('Logout'),
                         ),
@@ -86,6 +99,11 @@ class _AdminPageState extends State<AdminPage> {
                 label: Text('Users'),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.sync_outlined),
+                selectedIcon: Icon(Icons.sync),
+                label: Text('Sync'),
+              ),
+              NavigationRailDestination(
                 icon: Icon(Icons.home_outlined),
                 selectedIcon: Icon(Icons.home),
                 label: Text('Home'),
@@ -102,10 +120,11 @@ class _AdminPageState extends State<AdminPage> {
           Expanded(
             child: PageView(
               controller: _pageController,
-              children: const <Widget>[
-                AccountsPage(),
-                FoldersPage(),
-                UsersPage(),
+              children: <Widget>[
+                const AccountsPage(),
+                const FoldersPage(),
+                const UsersPage(),
+                SyncPage(),
               ],
             ),
           )

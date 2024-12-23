@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:onedrive_netflix/src/features/login/services/auth.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,7 +12,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  int _selectedIndex = 0;
   NavigationRailLabelType labelType = NavigationRailLabelType.all;
   double groupAlignment = 0.0;
 
@@ -22,13 +22,9 @@ class _HomePageState extends State<HomePage> {
       body: Row(
         children: <Widget>[
           NavigationRail(
-            selectedIndex: _selectedIndex,
+            selectedIndex: 0,
             groupAlignment: groupAlignment,
             onDestinationSelected: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-
               if (index == 2) {
                 showDialog(
                   context: context,
@@ -44,9 +40,15 @@ class _HomePageState extends State<HomePage> {
                           child: const Text('Cancel'),
                         ),
                         TextButton(
-                          onPressed: () {
-                            context.pop();
-                            context.push(Constants.loginRoute);
+                          onPressed: () async {
+                            final navigator = Navigator.of(context);
+                            final router = GoRouter.of(context);
+                            await GlobalAuthService.instance.signOut();
+
+                            if (!mounted) return;
+
+                            navigator.pop();
+                            router.go(Constants.loginRoute);
                           },
                           child: const Text('Logout'),
                         ),
@@ -58,8 +60,9 @@ class _HomePageState extends State<HomePage> {
                 return;
               }
 
-              context.push(
-                  index == 0 ? Constants.homeRoute : Constants.adminRoute);
+              if (index == 1) {
+                context.push(Constants.adminRoute);
+              }
             },
             labelType: labelType,
             destinations: const <NavigationRailDestination>[
@@ -86,7 +89,6 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Text('selectedIndex: $_selectedIndex'),
                 const SizedBox(height: 20),
                 Text('Label type: ${labelType.name}'),
                 const SizedBox(height: 20),

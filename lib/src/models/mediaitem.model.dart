@@ -23,6 +23,7 @@ class MediaItem {
   late String type;
   late int voteAverage;
   late int voteCount;
+  late bool isFound;
 
   // Custom properties
   late String folderId;

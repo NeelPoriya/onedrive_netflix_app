@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onedrive_netflix/firebase_options.dart';
 import 'package:onedrive_netflix/src/features/login/services/auth.dart';
+import 'package:talker/talker.dart';
 
 import 'settings_service.dart';
 
@@ -12,6 +14,7 @@ import 'settings_service.dart';
 /// uses the SettingsService to store and retrieve user settings.
 class SettingsController with ChangeNotifier {
   SettingsController(this._settingsService);
+  final Talker _talker = Talker();
 
   // Make SettingsService a private variable so it is not used directly.
   final SettingsService _settingsService;
@@ -30,18 +33,21 @@ class SettingsController with ChangeNotifier {
     try {
       WidgetsFlutterBinding.ensureInitialized();
 
-      print('Loading ThemeMode...');
+      _talker.info('Loading ThemeMode...');
       _themeMode = await _settingsService.themeMode();
 
-      print('Loading user');
+      _talker.info('Loading user');
       await GlobalAuthService.instance.getUser();
 
-      print('Loading database...');
+      _talker.info('Loading environment variables...');
+      await dotenv.load(fileName: '.env');
+
+      _talker.info('Loading database...');
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     } catch (e) {
-      print(e);
+      _talker.error('Error loading settings: $e');
       rethrow;
     }
 

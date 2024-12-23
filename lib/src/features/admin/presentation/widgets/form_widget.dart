@@ -11,7 +11,7 @@ class FormWidget extends StatelessWidget {
   final String buttonText;
 
   const FormWidget({
-    Key? key,
+    super.key,
     required this.nameController,
     required this.emailController,
     required this.nameFocusNode,
@@ -20,7 +20,7 @@ class FormWidget extends StatelessWidget {
     required this.onSave,
     required this.title,
     required this.buttonText,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

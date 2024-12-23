@@ -28,16 +28,19 @@ class _AccountsPageState extends State<AccountsPage> {
   }
 
   void saveToDatabase() {
+
     final String name = _nameController.text.trim();
     final String email = _emailController.text.trim();
 
     if (name.isNotEmpty && email.isNotEmpty) {
       _databaseService
           .saveData('accounts', {'name': name, 'email': email}).then((_) {
+        if(!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account saved successfully')),
         );
       }).catchError((error) {
+        if(!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save account: $error')),
         );
@@ -52,26 +55,32 @@ class _AccountsPageState extends State<AccountsPage> {
   void updateAccount(String key, String name, String email) {
     _databaseService
         .updateData('accounts/$key', {'name': name, 'email': email}).then((_) {
+        if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account updated successfully')),
       );
     }).catchError((error) {
+        if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update account: $error')),
       );
     });
   }
 
-  void deleteAccount(String key) {
-    _databaseService.deleteData('accounts/$key').then((_) {
+  void deleteAccount(String key) async {
+    try {
+      await _databaseService.deleteData('accounts/$key');
+      await _databaseService.deleteDataWithFilter('folders', 'accountId', key);
+        if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account deleted successfully')),
       );
-    }).catchError((error) {
+    } catch (error) {
+        if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete account: $error')),
       );
-    });
+    }
   }
 
   @override

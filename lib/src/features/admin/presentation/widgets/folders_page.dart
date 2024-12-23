@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:onedrive_netflix/src/models/account.model.dart';
 import 'package:onedrive_netflix/src/services/database_service.dart';
+import 'package:talker/talker.dart';
 
 class FoldersPage extends StatefulWidget {
   const FoldersPage({super.key});
@@ -17,7 +18,10 @@ class _FoldersPageState extends State<FoldersPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _accountIdController = TextEditingController();
 
+  final _prefix = "$FoldersPage | ";
+
   final DatabaseService _databaseService = DatabaseService();
+  Talker talker = Talker();
 
   @override
   void initState() {
@@ -35,7 +39,21 @@ class _FoldersPageState extends State<FoldersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: buildFoldersBody(),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Folders',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Divider(),
+          Expanded(
+            child: buildFoldersBody(),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: accounts.isEmpty
             ? () => ScaffoldMessenger.of(context).showSnackBar(
@@ -146,10 +164,9 @@ class _FoldersPageState extends State<FoldersPage> {
   }
 
   void loadAccounts() async {
-    print('Loading accounts');
+    talker.info("$_prefix | Loading accounts");
     DatabaseService service = DatabaseService();
     var snapshot = await service.getDataList('accounts');
-    print(snapshot.value);
 
     List<Account> accounts = [];
     if (snapshot.value == null) {
@@ -195,6 +212,7 @@ class _FoldersPageState extends State<FoldersPage> {
       'name': name,
       'accountId': accountId,
     }).then((_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Folder saved successfully.'),
@@ -202,6 +220,7 @@ class _FoldersPageState extends State<FoldersPage> {
       );
       Navigator.pop(context);
     }).catchError((error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save folder: $error'),
@@ -240,6 +259,7 @@ class _FoldersPageState extends State<FoldersPage> {
       'name': name,
       'accountId': accountId,
     }).then((_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Folder updated successfully.'),
@@ -247,6 +267,7 @@ class _FoldersPageState extends State<FoldersPage> {
       );
       Navigator.pop(context);
     }).catchError((error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update folder: $error'),
@@ -261,12 +282,14 @@ class _FoldersPageState extends State<FoldersPage> {
     DatabaseService service = DatabaseService();
 
     service.deleteData('folders/$folderId').then((_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Folder deleted successfully.'),
         ),
       );
     }).catchError((error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to delete folder: $error'),
@@ -291,55 +314,41 @@ class _FoldersPageState extends State<FoldersPage> {
           Map<dynamic, dynamic> accountsMap =
               snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
           List<dynamic> folders = accountsMap.entries.toList();
-          return Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Folders',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: folders.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final folderId = folders[index].key;
-                    final folderName = folders[index].value['name'];
-                    final accountId = folders[index].value['accountId'];
-                    final accountName = accounts
-                        .firstWhere((element) => element.id == accountId)
-                        .name;
-                    return Column(
+          return ListView.builder(
+            itemCount: folders.length,
+            itemBuilder: (BuildContext context, int index) {
+              final String folderId = folders[index].key;
+              final String folderName = folders[index].value['name'];
+              final String accountId = folders[index].value['accountId'];
+              final String accountName = accounts.isNotEmpty
+                  ? accounts.firstWhere((acc) => acc.id == accountId).name
+                  : '';
+
+              return Column(
+                children: [
+                  ListTile(
+                    title: Text(folderName),
+                    subtitle: Text(accountName),
+                    leading: const Icon(Icons.folder),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        ListTile(
-                          title: Text(folderName),
-                          subtitle: Text(accountName),
-                          leading: const Icon(Icons.folder),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () => addFolderFloatingButton(
-                                    context,
-                                    folderId: folderId),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => deleteFolder(folderId),
-                              ),
-                            ],
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => addFolderFloatingButton(context,
+                              folderId: folderId),
                         ),
-                        const Divider(),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => deleteFolder(folderId),
+                        ),
                       ],
-                    );
-                  },
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                  const Divider(),
+                ],
+              );
+            },
           );
         }
       },

@@ -5,10 +5,10 @@ class Folder {
 
   Folder();
 
-  Folder.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    accountId = json['accountId'];
+  Folder.fromMap(String key, Map<dynamic, dynamic> values) {
+    id = key;
+    name = values['name'];
+    accountId = values['accountId'];
   }
 
   Map<String, dynamic> toJson() {

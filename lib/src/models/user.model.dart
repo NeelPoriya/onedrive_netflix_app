@@ -10,21 +10,28 @@ class User {
 
   User();
 
-  User.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    email = json['email'];
-    name = json['name'];
-    createdAt = DateTime.parse(json['createdAt']);
-    updatedAt = DateTime.parse(json['updatedAt']);
-    lastLogin = DateTime.parse(json['lastLogin']);
-    isAdmin = json['isAdmin'];
-    status = UserStatus.values
-        .firstWhere((e) => e.toString() == 'UserStatus.${json['status']}');
+  User.withDetails(
+      {required this.email,
+      required this.name,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.lastLogin,
+      required this.isAdmin,
+      required this.status});
+
+  User.fromMap(Map<dynamic, dynamic> map, this.id) {
+    email = map['email'];
+    name = map['name'];
+    createdAt = DateTime.parse(map['createdAt']);
+    updatedAt = DateTime.parse(map['updatedAt']);
+    lastLogin = DateTime.parse(map['lastLogin']);
+    isAdmin = map['isAdmin'];
+    status = UserStatus.values.firstWhere(
+        (element) => element.toString().split('.').last == map['status']);
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['id'] = id;
     data['email'] = email;
     data['name'] = name;
     data['createdAt'] = createdAt.toIso8601String();

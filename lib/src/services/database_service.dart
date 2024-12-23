@@ -15,8 +15,28 @@ class DatabaseService {
     await _dbRef.child(path).remove();
   }
 
+  // delete data with filter
+  Future<void> deleteDataWithFilter(
+      String path, String key, dynamic value) async {
+    await _dbRef
+        .child(path)
+        .orderByChild(key)
+        .equalTo(value)
+        .get()
+        .then((snapshot) {
+      (snapshot.value as Map<dynamic, dynamic>).forEach((key, value) {
+        _dbRef.child(path).child(key).remove();
+      });
+    });
+  }
+
   DatabaseReference getDataStream(String path) {
     return _dbRef.child(path);
+  }
+
+  // get data stream with filter
+  Query getDataStreamWithFilter(String path, String key, dynamic value) {
+    return _dbRef.child(path).orderByChild(key).equalTo(value);
   }
 
   // get all items under a path
@@ -27,5 +47,11 @@ class DatabaseService {
   // get a single item under a path
   Future<DataSnapshot> getData(String path) async {
     return await _dbRef.child(path).get();
+  }
+
+  // get item with filter
+  Future<DataSnapshot> getDataWithFilter(
+      String path, String key, dynamic value) async {
+    return await _dbRef.child(path).orderByChild(key).equalTo(value).get();
   }
 }
