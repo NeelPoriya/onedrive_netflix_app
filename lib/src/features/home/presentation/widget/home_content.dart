@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:onedrive_netflix/src/models/mediaitem.model.dart';
 import 'package:onedrive_netflix/src/services/mediaitem_query_service.dart';
 import 'package:onedrive_netflix/src/features/home/presentation/widget/hero_content.dart';
-import 'package:talker/talker.dart';
 
 class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
@@ -13,7 +12,6 @@ class HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<HomeContent> {
   MediaitemQueryService mediaItemQueryService = MediaitemQueryService();
-  final _talker = Talker();
 
   MediaItem? heroMediaItem;
   List<MediaItem> actionItems = [];

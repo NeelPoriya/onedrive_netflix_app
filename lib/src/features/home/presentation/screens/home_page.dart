@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:onedrive_netflix/src/features/home/presentation/widget/home_content.dart';
 import 'package:onedrive_netflix/src/features/home/presentation/widget/home_navigation.dart';
-import 'package:onedrive_netflix/src/features/login/services/auth.dart';
-import 'package:onedrive_netflix/src/utils/constants.dart';
-import 'package:talker/talker.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +12,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final _talker = Talker();
   final FocusScopeNode _drawerFocusScopeNode =
       FocusScopeNode(debugLabel: 'Drawer');
   final FocusScopeNode _homeFocusScopeNode = FocusScopeNode(debugLabel: 'Home');
