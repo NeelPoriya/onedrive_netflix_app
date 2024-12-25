@@ -26,7 +26,9 @@ dependencies:
   go_router: ^14.6.2
   talker: ^4.5.2
   flutter_dotenv: ^5.2.1
-
+  google_fonts: ^6.2.1
+  path_provider: ^2.1.2
+  flutter_card_swiper: ^6.0.0
 
 dev_dependencies:
   flutter_test:

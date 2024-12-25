@@ -16,7 +16,7 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  int _selectedIndex = 3;
+  int _selectedIndex = 0;
   PageController _pageController = PageController();
   NavigationRailLabelType labelType = NavigationRailLabelType.all;
   double groupAlignment = 0.0;

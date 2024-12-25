@@ -35,15 +35,6 @@ class _MyAppState extends State<MyApp> {
     //
     // The ListenableBuilder Widget listens to the SettingsController for changes.
     // Whenever the user updates their settings, the MaterialApp is rebuilt.
-    final themeData = ThemeData(
-      useMaterial3: true,
-      textTheme: const TextTheme(
-        bodyMedium: TextStyle(
-          fontFamily: 'GoogleSans',
-          color: Colors.white,
-        ),
-      ),
-    );
 
     GoRouter router = GoRouter(
       routes: [
@@ -61,7 +52,7 @@ class _MyAppState extends State<MyApp> {
         ),
       ],
       initialLocation: GlobalAuthService.instance.isLoggedIn
-          ? Constants.adminRoute
+          ? Constants.homeRoute
           : Constants.loginRoute,
     );
 
@@ -101,8 +92,30 @@ class _MyAppState extends State<MyApp> {
           // Define a light and dark color theme. Then, read the user's
           // preferred ThemeMode (light, dark, or system default) from the
           // SettingsController to display the correct theme.
-          theme: themeData,
-          darkTheme: ThemeData.dark(),
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.red,
+              brightness: Brightness.dark,
+            ),
+            textTheme: ThemeData.dark().textTheme.apply(
+                  fontFamily: 'GoogleSans',
+                  bodyColor: Colors.white,
+                  displayColor: Colors.white,
+                ),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.red,
+              brightness: Brightness.dark,
+            ),
+            textTheme: ThemeData.dark().textTheme.apply(
+                  fontFamily: 'GoogleSans',
+                  bodyColor: Colors.white,
+                  displayColor: Colors.white,
+                ),
+          ),
           themeMode: widget.settingsController.themeMode,
 
           // Define a function to handle named routes in order to support

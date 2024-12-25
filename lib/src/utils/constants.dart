@@ -11,4 +11,7 @@ class Constants {
   static const String accountsRoute = '/admin/accounts';
   static const String foldersRoute = '/admin/folders';
   static const String usersRoute = '/admin/users';
+
+  // tmdb constants
+  static const String tmdbImageEndpoint = 'https://image.tmdb.org/t/p/original';
 }

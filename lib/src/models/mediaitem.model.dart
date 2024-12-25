@@ -1,3 +1,5 @@
+import 'package:onedrive_netflix/src/utils/constants.dart';
+
 class MediaItem {
   late String id;
   late String title;
@@ -14,14 +16,14 @@ class MediaItem {
   late int budget;
   late String backdropImage;
   late String imdbId;
-  late int popularityId;
+  late double popularityId;
   late String posterImage;
   late DateTime releaseDate;
   late int revenue;
   late String status;
   late String tmdbId;
   late String type;
-  late int voteAverage;
+  late double voteAverage;
   late int voteCount;
   late bool isFound;
 
@@ -31,27 +33,31 @@ class MediaItem {
   MediaItem();
 
   MediaItem.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    title = json['title'];
-    onedriveFolderId = json['onedriveFolderId'];
-    onedriveItemId = json['onedriveItemId'];
-    webUrl = json['webUrl'];
-    siteId = json['siteId'];
-    genre = List<String>.from(json['genre']);
-    adult = json['adult'];
-    budget = json['budget'];
-    backdropImage = json['backdropImage'];
-    imdbId = json['imdbId'];
-    popularityId = json['popularityId'];
-    posterImage = json['posterImage'];
-    releaseDate = DateTime.parse(json['releaseDate']);
-    revenue = json['revenue'];
-    status = json['status'];
-    tmdbId = json['tmdbId'];
-    type = json['type'];
-    voteAverage = json['voteAverage'];
-    voteCount = json['voteCount'];
-    folderId = json['folderId'];
+    id = json['id'] ?? '';
+    title = json['title'] ?? '';
+    onedriveFolderId = json['onedriveFolderId'] ?? '';
+    onedriveItemId = json['onedriveItemId'] ?? '';
+    webUrl = json['webUrl'] ?? '';
+    siteId = json['siteId'] ?? '';
+    genre =
+        (json['genre'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+            [];
+    adult = json['adult'] ?? false;
+    budget = json['budget'] ?? 0;
+    backdropImage = json['backdropImage'] ?? '';
+    imdbId = json['imdbId'] ?? '';
+    popularityId = (json['popularityId'] as num?)?.toDouble() ?? 0.0;
+    posterImage = json['posterImage'] ?? '';
+    releaseDate = json['releaseDate'] != null
+        ? DateTime.parse(json['releaseDate'])
+        : DateTime.now();
+    revenue = json['revenue'] ?? 0;
+    status = json['status'] ?? '';
+    tmdbId = json['tmdbId'] ?? '';
+    type = json['type'] ?? '';
+    voteAverage = (json['voteAverage'] as num?)?.toDouble() ?? 0.0;
+    voteCount = json['voteCount'] ?? 0;
+    folderId = json['folderId'] ?? '';
   }
 
   Map<String, dynamic> toJson() {
@@ -78,5 +84,42 @@ class MediaItem {
     data['voteCount'] = voteCount;
     data['folderId'] = folderId;
     return data;
+  }
+
+  MediaItem.fromMap(this.id, Map<dynamic, dynamic> data) {
+    title = data['title'] ?? '';
+    onedriveFolderId = data['onedriveFolderId'] ?? '';
+    onedriveItemId = data['onedriveItemId'] ?? '';
+    webUrl = data['webUrl'] ?? '';
+    siteId = data['siteId'] ?? '';
+    genre =
+        (data['genre'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+            [];
+    adult = data['adult'] ?? false;
+    budget = data['budget'] ?? 0;
+
+    backdropImage =
+        (data['backdropImage'] != null && data['backdropImage'] != '')
+            ? Constants.tmdbImageEndpoint + data['backdropImage']
+            : '';
+
+    imdbId = data['imdbId'] ?? '';
+    popularityId = (data['popularityId'] as num?)?.toDouble() ?? 0.0;
+
+    posterImage = (data['posterImage'] != null && data['posterImage'] != '')
+        ? Constants.tmdbImageEndpoint + data['posterImage']
+        : '';
+
+    releaseDate = data['releaseDate'] != null
+        ? DateTime.parse(data['releaseDate'])
+        : DateTime.now();
+
+    revenue = data['revenue'] ?? 0;
+    status = data['status'] ?? '';
+    tmdbId = data['tmdbId'] ?? '';
+    type = data['type'] ?? '';
+    voteAverage = (data['voteAverage'] as num?)?.toDouble() ?? 0.0;
+    voteCount = data['voteCount'] ?? 0;
+    folderId = data['folderId'] ?? '';
   }
 }

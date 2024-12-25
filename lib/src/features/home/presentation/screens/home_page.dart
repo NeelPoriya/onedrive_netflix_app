@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:onedrive_netflix/src/features/home/presentation/widget/home_content.dart';
+import 'package:onedrive_netflix/src/features/home/presentation/widget/home_navigation.dart';
 import 'package:onedrive_netflix/src/features/login/services/auth.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
+import 'package:talker/talker.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,91 +16,101 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  NavigationRailLabelType labelType = NavigationRailLabelType.all;
-  double groupAlignment = 0.0;
+  final _talker = Talker();
+  final FocusScopeNode _drawerFocusScopeNode =
+      FocusScopeNode(debugLabel: 'Drawer');
+  final FocusScopeNode _homeFocusScopeNode = FocusScopeNode(debugLabel: 'Home');
+
+  @override
+  void dispose() {
+    _drawerFocusScopeNode.dispose();
+    _homeFocusScopeNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      body: Row(
-        children: <Widget>[
-          NavigationRail(
-            selectedIndex: 0,
-            groupAlignment: groupAlignment,
-            onDestinationSelected: (int index) {
-              if (index == 2) {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () {
-                            context.pop();
-                          },
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final navigator = Navigator.of(context);
-                            final router = GoRouter.of(context);
-                            await GlobalAuthService.instance.signOut();
-
-                            if (!mounted) return;
-
-                            navigator.pop();
-                            router.go(Constants.loginRoute);
-                          },
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    );
-                  },
-                );
-
-                return;
-              }
-
-              if (index == 1) {
-                context.push(Constants.adminRoute);
-              }
-            },
-            labelType: labelType,
-            destinations: const <NavigationRailDestination>[
-              NavigationRailDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
-                label: Text('Home'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.supervised_user_circle_outlined),
-                selectedIcon: Icon(Icons.supervised_user_circle),
-                label: Text('Admin'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.logout_outlined),
-                selectedIcon: Icon(Icons.logout),
-                label: Text('Logout'),
-              ),
-            ],
-          ),
-          const VerticalDivider(thickness: 1, width: 1),
-          // This is the main content.
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(height: 20),
-                Text('Label type: ${labelType.name}'),
-                const SizedBox(height: 20),
-              ],
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          bool check = await _onWillPop();
+          if (check && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Stack(
+          children: <Widget>[
+            // This is the main content.
+            FocusScope(
+              autofocus: true,
+              node: _homeFocusScopeNode,
+              onKeyEvent: _onKeyForHomeScreenFocus,
+              child: HomeContent(),
             ),
-          ),
-        ],
+            // addes a black background when the drawer is focused
+            Positioned.fill(
+              child: AnimatedContainer(
+                color: _drawerFocusScopeNode.hasFocus
+                    ? Colors.black.withAlpha(150)
+                    : Colors.transparent,
+                curve: Curves.easeInOut,
+                duration: const Duration(milliseconds: 200),
+              ),
+            ),
+            // This is the drawer.
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              left: _drawerFocusScopeNode.hasFocus ? 0 : -200,
+              top: 0,
+              bottom: 0,
+              curve: Curves.easeInOut,
+              child: FocusScope(
+                node: _drawerFocusScopeNode,
+                onKeyEvent: _onKeyForDrawerScreenFocus,
+                child: HomeNavigation(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  // ignore: deprecated_member_use
+  KeyEventResult _onKeyForHomeScreenFocus(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent ||
+        event.logicalKey != LogicalKeyboardKey.arrowLeft) {
+      return KeyEventResult.ignored;
+    }
+    if (node is! FocusScopeNode) {
+      return KeyEventResult.ignored;
+    }
+
+    if (_homeFocusScopeNode.focusInDirection(TraversalDirection.left)) {
+      return KeyEventResult.handled;
+    }
+
+    _drawerFocusScopeNode.requestFocus();
+    setState(() {});
+    return KeyEventResult.handled;
+  }
+
+  KeyEventResult _onKeyForDrawerScreenFocus(FocusNode node, KeyEvent event) {
+    if (event is! KeyUpEvent ||
+        event.logicalKey != LogicalKeyboardKey.arrowRight) {
+      return KeyEventResult.ignored;
+    }
+
+    _homeFocusScopeNode.requestFocus();
+    setState(() {});
+    return KeyEventResult.handled;
+  }
+
+  Future<bool> _onWillPop() async {
+    if (_drawerFocusScopeNode.hasFocus) return false;
+    _drawerFocusScopeNode.requestFocus();
+    return false;
   }
 }
