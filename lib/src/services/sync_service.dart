@@ -267,6 +267,8 @@ class SyncService {
     mediaItem['voteAverage'] = movieData['vote_average'];
     mediaItem['voteCount'] = movieData['vote_count'];
     mediaItem['isFound'] = true;
+    mediaItem['tmdbTitle'] = movieData['title'];
+    mediaItem['tmdbOverview'] = movieData['overview'];
   }
 
   Future<void> _processTvItem(RetryClient client, String tmdbKey,
@@ -293,6 +295,8 @@ class SyncService {
     mediaItem['voteAverage'] = tvData['vote_average'];
     mediaItem['voteCount'] = tvData['vote_count'];
     mediaItem['isFound'] = true;
+    mediaItem['tmdbTitle'] = tvData['name'];
+    mediaItem['tmdbOverview'] = tvData['overview'];
   }
 
   Future<String> getToken(RetryClient client) async {

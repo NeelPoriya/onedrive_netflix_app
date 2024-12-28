@@ -11,6 +11,8 @@ class Constants {
 
   static const String listRoute = '/list';
 
+  static const String mediaDetailsRoute = '/media/:mediaId';
+
   static const String adminRoute = '/admin';
   static const String accountsRoute = '/admin/accounts';
   static const String foldersRoute = '/admin/folders';

@@ -24,6 +24,8 @@ class MediaItem {
   late double voteAverage;
   late int voteCount;
   late bool isFound;
+  late String tmdbTitle;
+  late String tmdbOverview;
 
   // Custom properties
   late String folderId;
@@ -56,6 +58,8 @@ class MediaItem {
     voteAverage = (json['voteAverage'] as num?)?.toDouble() ?? 0.0;
     voteCount = json['voteCount'] ?? 0;
     folderId = json['folderId'] ?? '';
+    tmdbTitle = json['tmdbTitle'] ?? '';
+    tmdbOverview = json['tmdbOverview'] ?? '';
   }
 
   Map<String, dynamic> toJson() {
@@ -81,6 +85,8 @@ class MediaItem {
     data['voteAverage'] = voteAverage;
     data['voteCount'] = voteCount;
     data['folderId'] = folderId;
+    data['tmdbTitle'] = tmdbTitle;
+    data['tmdbOverview'] = tmdbOverview;
     return data;
   }
 
@@ -114,5 +120,7 @@ class MediaItem {
     voteAverage = (data['voteAverage'] as num?)?.toDouble() ?? 0.0;
     voteCount = data['voteCount'] ?? 0;
     folderId = data['folderId'] ?? '';
+    tmdbTitle = data['tmdbTitle'] ?? '';
+    tmdbOverview = data['tmdbOverview'] ?? '';
   }
 }

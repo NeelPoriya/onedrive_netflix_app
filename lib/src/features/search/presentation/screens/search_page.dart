@@ -3,6 +3,8 @@ import 'package:onedrive_netflix/src/models/mediaitem.model.dart';
 import 'package:onedrive_netflix/src/services/mediaitem_query_service.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
 import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -23,6 +25,8 @@ class _SearchPageState extends State<SearchPage> {
   String _lastSearchTerm = '';
   bool _hasMoreItems = true;
   bool _isSearching = false;
+  int? _selectedItemIndex;
+  bool _isItemPressed = false;
 
   @override
   void initState() {
@@ -200,6 +204,21 @@ class _SearchPageState extends State<SearchPage> {
                       final item = _searchResults[index];
                       return Focus(
                         key: Key('search_result_$index'),
+                        onKeyEvent: (node, event) {
+                          if (event is KeyDownEvent) {
+                            if (event.logicalKey == LogicalKeyboardKey.enter ||
+                                event.logicalKey == LogicalKeyboardKey.select ||
+                                event.logicalKey ==
+                                    LogicalKeyboardKey.gameButtonA) {
+                              if (!context.mounted) {
+                                return KeyEventResult.ignored;
+                              }
+                              GoRouter.of(context).push('/media/${item.id}');
+                              return KeyEventResult.handled;
+                            }
+                          }
+                          return KeyEventResult.ignored;
+                        },
                         onFocusChange: (hasFocus) {
                           if (hasFocus) {
                             // Calculate actual item height including spacing
@@ -226,59 +245,86 @@ class _SearchPageState extends State<SearchPage> {
                         child: Builder(
                           builder: (context) {
                             final hasFocus = Focus.of(context).hasFocus;
-                            return AnimatedScale(
-                              scale: hasFocus ? 1.1 : 1.0,
-                              duration: const Duration(milliseconds: 200),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: hasFocus
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    width: 2,
+                            return GestureDetector(
+                              onTapDown: (_) {
+                                setState(() {
+                                  _selectedItemIndex = index;
+                                  _isItemPressed = true;
+                                });
+                                Future.delayed(
+                                    const Duration(milliseconds: 200), () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isItemPressed = false;
+                                      _selectedItemIndex = null;
+                                    });
+                                    // Navigate to details page
+                                    if (!context.mounted) return;
+                                    GoRouter.of(context)
+                                        .push('/media/${item.id}');
+                                  }
+                                });
+                              },
+                              child: AnimatedScale(
+                                scale: _isItemPressed &&
+                                        _selectedItemIndex == index
+                                    ? 0.9 // Pressed state
+                                    : hasFocus
+                                        ? 1.1 // Focused state
+                                        : 1.0, // Normal state
+                                duration: const Duration(milliseconds: 200),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: hasFocus
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
                                   ),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.network(
-                                        item.backdropImage.isEmpty
-                                            ? 'https://placehold.co/600x400'
-                                            : Constants.tmdbImageEndpointW500 +
-                                                item.backdropImage,
-                                        fit: BoxFit.cover,
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.bottomCenter,
-                                              end: Alignment.topCenter,
-                                              colors: [
-                                                Colors.black.withAlpha(150),
-                                                Colors.transparent,
-                                              ],
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Image.network(
+                                          item.backdropImage.isEmpty
+                                              ? 'https://placehold.co/600x400'
+                                              : Constants
+                                                      .tmdbImageEndpointW500 +
+                                                  item.backdropImage,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomCenter,
+                                                end: Alignment.topCenter,
+                                                colors: [
+                                                  Colors.black.withAlpha(150),
+                                                  Colors.transparent,
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                          padding: const EdgeInsets.all(8),
-                                          child: Text(
-                                            item.title,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
+                                            padding: const EdgeInsets.all(8),
+                                            child: Text(
+                                              item.title,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

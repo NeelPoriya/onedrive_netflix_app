@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:onedrive_netflix/src/models/mediaitem.model.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
+import 'package:go_router/go_router.dart';
 
 class TVImageSlider extends StatefulWidget {
   final ScrollController homeScrollController;
@@ -65,6 +66,12 @@ class _TVImageSliderState extends State<TVImageSlider> {
       if (node.focusInDirection(TraversalDirection.up)) {}
     } else if (key == LogicalKeyboardKey.arrowDown) {
       if (node.focusInDirection(TraversalDirection.down)) {}
+    } else if ((key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.select ||
+            key == LogicalKeyboardKey.gameButtonA) &&
+        _selectedIndex < widget.mediaItems.length) {
+      // Navigate to media details
+      context.push('/media/${widget.mediaItems[_selectedIndex].id}');
     }
   }
 
@@ -140,6 +147,9 @@ class _TVImageSliderState extends State<TVImageSlider> {
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                     );
+                    if (index < widget.mediaItems.length) {
+                      context.push('/media/${widget.mediaItems[index].id}');
+                    }
                   },
                   child: Container(
                     margin: const EdgeInsets.all(8),

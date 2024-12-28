@@ -128,4 +128,31 @@ class MediaitemQueryService {
 
     return result;
   }
+
+  Future<List<MediaItem>> getMediaItemsByLetter(String letter,
+      {int page = 0, int limit = 12}) async {
+    final DataSnapshot snapshot =
+        await _db.child(_path).orderByChild('isFound').equalTo(true).get();
+    final data = snapshot.value as Map<dynamic, dynamic>;
+
+    // Filter items where title starts with the letter
+    final filteredData = data.entries.where((entry) {
+      final String title = (entry.value['title'] as String? ?? '').trim();
+      return title.toUpperCase().startsWith(letter);
+    }).toList();
+
+    // Apply pagination
+    final start = page * limit;
+    final paginatedData = filteredData.skip(start).take(limit);
+
+    return paginatedData.map((e) => MediaItem.fromMap(e.key, e.value)).toList();
+  }
+
+  Future<MediaItem?> getMediaItemById(String id) async {
+    final DataSnapshot snapshot = await _db.child('$_path/$id').get();
+    if (!snapshot.exists || snapshot.value == null) return null;
+
+    final data = snapshot.value as Map<dynamic, dynamic>;
+    return MediaItem.fromMap(id, data);
+  }
 }

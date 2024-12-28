@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onedrive_netflix/src/models/mediaitem.model.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
+import 'package:go_router/go_router.dart';
 
 class HeroMediaItem extends StatelessWidget {
   final MediaItem mediaItem;
@@ -76,7 +77,9 @@ class HeroMediaItem extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        context.push('/media/${mediaItem.id}');
+                      },
                       icon: const Icon(Icons.info_outline),
                       onFocusChange: (value) {
                         if (value) {
