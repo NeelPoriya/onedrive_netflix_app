@@ -36,17 +36,96 @@ class MediaitemQueryService {
   }
 
   Future<List<MediaItem>> getRandomMediaItemsByGenre(
-      String genre, int limit) async {
-    final DataSnapshot snapshot = await _db.child(_path).get();
+      String genre, int limit, String type) async {
+    final DataSnapshot snapshot =
+        await _db.child(_path).orderByChild('isFound').equalTo(true).get();
     final data = snapshot.value as Map<dynamic, dynamic>;
 
-    // Filter items where genre array contains the requested genre
+    // Filter items where genre array contains the requested genre AND type matches
     final filteredData = data.entries.where((entry) {
       final List<dynamic> genres =
           (entry.value['genre'] as List<dynamic>?) ?? [];
-      return genres.contains(genre);
-    }).take(limit);
+      final String itemType = entry.value['type'] as String? ?? '';
+      return genres.contains(genre) && itemType == type;
+    }).toList();
 
-    return filteredData.map((e) => MediaItem.fromMap(e.key, e.value)).toList();
+    // Shuffle the filtered data
+    filteredData.shuffle();
+
+    // Take first 'limit' items after shuffling
+    final randomizedData = filteredData.take(limit);
+
+    return randomizedData
+        .map((e) => MediaItem.fromMap(e.key, e.value))
+        .toList();
+  }
+
+  Future<List<MediaItem>> searchMediaItems(String searchTerm,
+      {int page = 0, int limit = 20}) async {
+    final DataSnapshot snapshot =
+        await _db.child(_path).orderByChild('isFound').equalTo(true).get();
+    final data = snapshot.value as Map<dynamic, dynamic>;
+
+    // Clean up search term: remove punctuation and convert to lowercase
+    final cleanSearchTerm = searchTerm
+        .toLowerCase()
+        .replaceAll(RegExp(r'[.,:]'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+
+    // Split into words for individual matching
+    final searchWords = cleanSearchTerm.split(' ');
+
+    if (searchWords.isEmpty) {
+      return [];
+    }
+
+    // Filter items where title contains any of the search words
+    final filteredData = data.entries.where((entry) {
+      final String title = (entry.value['title'] as String? ?? '')
+          .toLowerCase()
+          .replaceAll(RegExp(r'[.,:]'), ' ')
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' ');
+
+      return searchWords.every((word) => title.contains(word));
+    }).toList();
+
+    // Apply pagination
+    final start = page * limit;
+    final paginatedData = filteredData.skip(start).take(limit);
+
+    return paginatedData.map((e) => MediaItem.fromMap(e.key, e.value)).toList();
+  }
+
+  Future<List<(String, String, List<MediaItem>)>> getMediaItemsByGenre(
+      List<String> genres, List<String> types) async {
+    final DataSnapshot snapshot =
+        await _db.child(_path).orderByChild('isFound').equalTo(true).get();
+    final data = snapshot.value as Map<dynamic, dynamic>;
+
+    List<(String, String, List<MediaItem>)> result = [];
+
+    for (String genre in genres) {
+      for (String type in types) {
+        final filteredData = data.entries.where((entry) {
+          final List<dynamic> genres =
+              (entry.value['genre'] as List<dynamic>?) ?? [];
+          final String itemType = entry.value['type'] as String? ?? '';
+          return genres.contains(genre) && itemType == type;
+        }).toList();
+        filteredData.shuffle();
+        result.add((
+          genre,
+          type,
+          filteredData
+              .take(10)
+              .map((e) => MediaItem.fromMap(e.key, e.value))
+              .toList()
+        ));
+      }
+    }
+
+    return result;
   }
 }

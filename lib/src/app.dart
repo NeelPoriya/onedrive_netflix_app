@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:go_router/go_router.dart';
-import 'package:onedrive_netflix/src/features/admin/presentation/screens/admin_page.dart';
-import 'package:onedrive_netflix/src/features/home/presentation/screens/home_page.dart';
-import 'package:onedrive_netflix/src/features/login/presentation/screens/login_screen.dart';
-import 'package:onedrive_netflix/src/features/login/services/auth.dart';
-import 'package:onedrive_netflix/src/utils/constants.dart';
+import 'package:onedrive_netflix/src/utils/routes.dart';
 
 import 'settings/settings_controller.dart';
 
@@ -35,26 +30,6 @@ class _MyAppState extends State<MyApp> {
     //
     // The ListenableBuilder Widget listens to the SettingsController for changes.
     // Whenever the user updates their settings, the MaterialApp is rebuilt.
-
-    GoRouter router = GoRouter(
-      routes: [
-        GoRoute(
-          path: Constants.loginRoute,
-          builder: (context, state) => const LoginScreen(),
-        ),
-        GoRoute(
-          path: Constants.homeRoute,
-          builder: (context, state) => const HomePage(),
-        ),
-        GoRoute(
-          path: Constants.adminRoute,
-          builder: (context, state) => const AdminPage(),
-        ),
-      ],
-      initialLocation: GlobalAuthService.instance.isLoggedIn
-          ? Constants.homeRoute
-          : Constants.loginRoute,
-    );
 
     return ListenableBuilder(
       listenable: widget.settingsController,
@@ -120,7 +95,7 @@ class _MyAppState extends State<MyApp> {
 
           // Define a function to handle named routes in order to support
           // Flutter web url navigation and deep linking.
-          routerConfig: router,
+          routerConfig: Routes.router,
         );
       },
     );

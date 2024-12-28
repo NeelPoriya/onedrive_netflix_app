@@ -1,5 +1,3 @@
-import 'package:onedrive_netflix/src/utils/constants.dart';
-
 class MediaItem {
   late String id;
   late String title;
@@ -98,19 +96,14 @@ class MediaItem {
     adult = data['adult'] ?? false;
     budget = data['budget'] ?? 0;
 
-    backdropImage =
-        (data['backdropImage'] != null && data['backdropImage'] != '')
-            ? Constants.tmdbImageEndpoint + data['backdropImage']
-            : '';
+    backdropImage = data['backdropImage'] ?? '';
 
     imdbId = data['imdbId'] ?? '';
     popularityId = (data['popularityId'] as num?)?.toDouble() ?? 0.0;
 
-    posterImage = (data['posterImage'] != null && data['posterImage'] != '')
-        ? Constants.tmdbImageEndpoint + data['posterImage']
-        : '';
+    posterImage = data['posterImage'] ?? '';
 
-    releaseDate = data['releaseDate'] != null
+    releaseDate = data['releaseDate'] != null && data['releaseDate'] != ''
         ? DateTime.parse(data['releaseDate'])
         : DateTime.now();
 

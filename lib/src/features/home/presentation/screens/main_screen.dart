@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:onedrive_netflix/src/features/home/presentation/widget/home_content.dart';
-import 'package:onedrive_netflix/src/features/home/presentation/widget/home_navigation.dart';
+import 'package:onedrive_netflix/src/features/home/presentation/widget/main_navigation.dart';
+import 'package:onedrive_netflix/src/utils/top_navbar.dart';
+import 'package:talker/talker.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key, required this.child});
+  final Widget child;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _MainScreenState extends State<MainScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final FocusScopeNode _drawerFocusScopeNode =
       FocusScopeNode(debugLabel: 'Drawer');
   final FocusScopeNode _homeFocusScopeNode = FocusScopeNode(debugLabel: 'Home');
+  final Talker _talker = Talker();
 
   @override
   void dispose() {
@@ -29,32 +32,31 @@ class _HomePageState extends State<HomePage> {
       key: _scaffoldKey,
       body: PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          bool check = await _onWillPop();
-          if (check && context.mounted) {
-            Navigator.of(context).pop();
+        onPopInvokedWithResult: (didPop, result) {
+          if (_drawerFocusScopeNode.hasFocus) {
+            _homeFocusScopeNode.requestFocus();
+            setState(() {});
           }
         },
         child: Stack(
           children: <Widget>[
-            // This is the main content.
             FocusScope(
               autofocus: true,
               node: _homeFocusScopeNode,
               onKeyEvent: _onKeyForHomeScreenFocus,
-              child: HomeContent(),
-            ),
-            // addes a black background when the drawer is focused
-            Positioned.fill(
-              child: AnimatedContainer(
-                color: _drawerFocusScopeNode.hasFocus
-                    ? Colors.black.withAlpha(150)
-                    : Colors.transparent,
-                curve: Curves.easeInOut,
-                duration: const Duration(milliseconds: 200),
+              child: Stack(
+                children: [
+                  widget.child,
+                  TopNavbar(
+                    requestDrawerFocus: () {
+                      _drawerFocusScopeNode.requestFocus();
+                      setState(() {});
+                    },
+                  ),
+                ],
               ),
             ),
-            // This is the drawer.
+            NavigationOverlay(drawerFocusScopeNode: _drawerFocusScopeNode),
             AnimatedPositioned(
               duration: const Duration(milliseconds: 200),
               left: _drawerFocusScopeNode.hasFocus ? 0 : -200,
@@ -64,7 +66,13 @@ class _HomePageState extends State<HomePage> {
               child: FocusScope(
                 node: _drawerFocusScopeNode,
                 onKeyEvent: _onKeyForDrawerScreenFocus,
-                child: HomeNavigation(),
+                child: MainNavigation(
+                  requestHomeFocus: () {
+                    _talker.info('requesting home focus');
+                    _homeFocusScopeNode.requestFocus();
+                    setState(() {});
+                  },
+                ),
               ),
             ),
           ],
@@ -86,9 +94,8 @@ class _HomePageState extends State<HomePage> {
     if (_homeFocusScopeNode.focusInDirection(TraversalDirection.left)) {
       return KeyEventResult.handled;
     }
-
-    _drawerFocusScopeNode.requestFocus();
-    setState(() {});
+    // _drawerFocusScopeNode.requestFocus();
+    // setState(() {});
     return KeyEventResult.handled;
   }
 
@@ -102,10 +109,29 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
     return KeyEventResult.handled;
   }
+}
 
-  Future<bool> _onWillPop() async {
-    if (_drawerFocusScopeNode.hasFocus) return false;
-    _drawerFocusScopeNode.requestFocus();
-    return false;
+class NavigationOverlay extends StatelessWidget {
+  const NavigationOverlay({
+    super.key,
+    required FocusScopeNode drawerFocusScopeNode,
+  }) : _drawerFocusScopeNode = drawerFocusScopeNode;
+
+  final FocusScopeNode _drawerFocusScopeNode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: !_drawerFocusScopeNode.hasFocus,
+        child: AnimatedContainer(
+          color: _drawerFocusScopeNode.hasFocus
+              ? Colors.black.withAlpha(150)
+              : Colors.transparent,
+          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 200),
+        ),
+      ),
+    );
   }
 }

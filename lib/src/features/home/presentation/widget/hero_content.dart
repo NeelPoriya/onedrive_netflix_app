@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:onedrive_netflix/src/models/mediaitem.model.dart';
+import 'package:onedrive_netflix/src/utils/constants.dart';
 
 class HeroMediaItem extends StatelessWidget {
   final MediaItem mediaItem;
+  final ScrollController scrollController;
 
-  const HeroMediaItem({super.key, required this.mediaItem});
+  const HeroMediaItem({
+    super.key,
+    required this.mediaItem,
+    required this.scrollController,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,7 @@ class HeroMediaItem extends StatelessWidget {
               },
               blendMode: BlendMode.darken,
               child: Image.network(
-                mediaItem.backdropImage,
+                Constants.tmdbImageEndpoint + mediaItem.backdropImage,
                 fit: BoxFit.cover,
               ),
             ),
@@ -53,6 +59,15 @@ class HeroMediaItem extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: () {},
                       autofocus: true,
+                      onFocusChange: (value) {
+                        if (value) {
+                          scrollController.animateTo(
+                            0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
                       icon: const Icon(Icons.play_arrow),
                       label: Text(
                         'Play',
@@ -63,6 +78,15 @@ class HeroMediaItem extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: () {},
                       icon: const Icon(Icons.info_outline),
+                      onFocusChange: (value) {
+                        if (value) {
+                          scrollController.animateTo(
+                            0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
                       label: Text(
                         'More Info',
                         style: Theme.of(context).textTheme.labelLarge,
