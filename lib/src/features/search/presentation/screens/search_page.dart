@@ -290,7 +290,7 @@ class _SearchPageState extends State<SearchPage> {
                                       children: [
                                         Image.network(
                                           item.backdropImage.isEmpty
-                                              ? 'https://placehold.co/600x400'
+                                              ? 'https://picsum.photos/seed/picsum/1920/1080'
                                               : Constants
                                                       .tmdbImageEndpointW500 +
                                                   item.backdropImage,

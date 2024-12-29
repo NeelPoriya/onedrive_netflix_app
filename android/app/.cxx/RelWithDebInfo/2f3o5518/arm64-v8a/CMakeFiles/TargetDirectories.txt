@@ -1,0 +1,2 @@
+C:/projects/onedrive_netflix/android/app/.cxx/RelWithDebInfo/2f3o5518/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/projects/onedrive_netflix/android/app/.cxx/RelWithDebInfo/2f3o5518/arm64-v8a/CMakeFiles/rebuild_cache.dir

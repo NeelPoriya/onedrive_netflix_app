@@ -103,6 +103,8 @@ class _HomePageState extends State<HomePage> {
       });
     }
 
+    await mediaItemQueryService.getListOfUrls('-OExJl8rdkfvza1nICNL');
+
     mediaItemsByGenre = await mediaItemQueryService
         .getMediaItemsByGenre(genres, ['movie', 'tv']);
     if (mounted) {

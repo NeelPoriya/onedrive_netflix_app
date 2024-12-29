@@ -58,8 +58,9 @@ class HeroMediaItem extends StatelessWidget {
                 Row(
                   children: [
                     ElevatedButton.icon(
-                      onPressed: () {},
-                      autofocus: true,
+                      onPressed: () {
+                        GoRouter.of(context).push('/play/${mediaItem.id}');
+                      },
                       onFocusChange: (value) {
                         if (value) {
                           scrollController.animateTo(

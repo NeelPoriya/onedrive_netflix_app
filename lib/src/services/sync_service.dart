@@ -145,7 +145,7 @@ class SyncService {
 
       for (var item in data['value']) {
         if (item['folder'] != null) {
-          futures.add(_processFolderItem(client, token, item, folder));
+          futures.add(_processFolderItem(client, token, item, folder, driveId));
           if (futures.length >= maxThreads) {
             await Future.wait(futures);
             futures.clear();
@@ -168,7 +168,7 @@ class SyncService {
   }
 
   Future<void> _processFolderItem(RetryClient client, String token,
-      Map<String, dynamic> item, Folder folder) async {
+      Map<String, dynamic> item, Folder folder, String driveId) async {
     // _talker.info("Folder: ${item['name']}");
     Map<String, dynamic> mediaItem = {
       'title': item['name'],
@@ -229,9 +229,9 @@ class SyncService {
 
     if (tmdbData['results'].length > 0) {
       if (isMovie) {
-        await _processMovieItem(client, tmdbKey, tmdbData, mediaItem);
+        await _processMovieItem(client, tmdbKey, tmdbData, mediaItem, driveId);
       } else {
-        await _processTvItem(client, tmdbKey, tmdbData, mediaItem);
+        await _processTvItem(client, tmdbKey, tmdbData, mediaItem, driveId);
       }
     } else {
       mediaItem['isFound'] = false;
@@ -241,7 +241,7 @@ class SyncService {
   }
 
   Future<void> _processMovieItem(RetryClient client, String tmdbKey,
-      Map<String, dynamic> tmdbData, Map<String, dynamic> mediaItem) async {
+      Map<String, dynamic> tmdbData, Map<String, dynamic> mediaItem, String driveId) async {
     String tmdbId = tmdbData['results'][0]['id'].toString();
     String movieDetails = 'https://api.themoviedb.org/3/movie/$tmdbId';
     Response movieRes = await client.get(
@@ -254,7 +254,9 @@ class SyncService {
     mediaItem['adult'] = movieData['adult'];
     mediaItem['budget'] = movieData['budget'];
     mediaItem['backdropImage'] = movieData['backdrop_path'];
-    mediaItem['imdbId'] = movieData['imdb_id'];
+    if (movieData['imdb_id'] != null) {
+      mediaItem['imdbId'] = movieData['imdb_id'];
+    }
     mediaItem['popularityId'] = movieData['popularity'];
     mediaItem['posterImage'] = movieData['poster_path'];
     mediaItem['releaseDate'] = movieData['release_date'] != ''
@@ -269,10 +271,11 @@ class SyncService {
     mediaItem['isFound'] = true;
     mediaItem['tmdbTitle'] = movieData['title'];
     mediaItem['tmdbOverview'] = movieData['overview'];
+    mediaItem['driveId'] = driveId;
   }
 
   Future<void> _processTvItem(RetryClient client, String tmdbKey,
-      Map<String, dynamic> tmdbData, Map<String, dynamic> mediaItem) async {
+      Map<String, dynamic> tmdbData, Map<String, dynamic> mediaItem, String driveId) async {
     String tmdbId = tmdbData['results'][0]['id'].toString();
     String tvDetails = 'https://api.themoviedb.org/3/tv/$tmdbId';
     Response tvRes = await client.get(
@@ -283,7 +286,7 @@ class SyncService {
     mediaItem['genre'] =
         List<String>.from(tvData['genres'].map((genre) => genre['name']));
     mediaItem['backdropImage'] = tvData['backdrop_path'];
-    mediaItem['imdbId'] = tvData['external_ids']['imdb_id'];
+    mediaItem['imdbId'] = 'not found for TV';
     mediaItem['popularityId'] = tvData['popularity'];
     mediaItem['posterImage'] = tvData['poster_path'];
     mediaItem['releaseDate'] = tvData['first_air_date'] != ''
@@ -297,6 +300,7 @@ class SyncService {
     mediaItem['isFound'] = true;
     mediaItem['tmdbTitle'] = tvData['name'];
     mediaItem['tmdbOverview'] = tvData['overview'];
+    mediaItem['driveId'] = driveId;
   }
 
   Future<String> getToken(RetryClient client) async {

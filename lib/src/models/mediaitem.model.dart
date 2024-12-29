@@ -5,6 +5,7 @@ class MediaItem {
   // Onedrive properties
   late String onedriveFolderId;
   late String onedriveItemId;
+  late String driveId;
   late String webUrl;
   late String siteId;
 
@@ -60,6 +61,7 @@ class MediaItem {
     folderId = json['folderId'] ?? '';
     tmdbTitle = json['tmdbTitle'] ?? '';
     tmdbOverview = json['tmdbOverview'] ?? '';
+    driveId = json['driveId'] ?? '';
   }
 
   Map<String, dynamic> toJson() {
@@ -87,6 +89,7 @@ class MediaItem {
     data['folderId'] = folderId;
     data['tmdbTitle'] = tmdbTitle;
     data['tmdbOverview'] = tmdbOverview;
+    data['driveId'] = driveId;
     return data;
   }
 
@@ -122,5 +125,6 @@ class MediaItem {
     folderId = data['folderId'] ?? '';
     tmdbTitle = data['tmdbTitle'] ?? '';
     tmdbOverview = data['tmdbOverview'] ?? '';
+    driveId = data['driveId'] ?? '';
   }
 }

@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart';
+import 'package:http/retry.dart';
 import 'package:onedrive_netflix/src/models/mediaitem.model.dart';
+import 'package:onedrive_netflix/src/models/video.model.dart';
 import 'package:talker/talker.dart';
 
 class MediaitemQueryService {
@@ -127,6 +132,117 @@ class MediaitemQueryService {
     }
 
     return result;
+  }
+
+  Future<List<Video>> getListOfUrls(String mediaItemId) async {
+    final start = DateTime.now();
+    try {
+      final DataSnapshot snapshot =
+          await _db.child(_path).child(mediaItemId).get();
+      final data = snapshot.value as Map<dynamic, dynamic>;
+
+      MediaItem mediaItem = MediaItem.fromMap(mediaItemId, data);
+
+      final RetryClient client = RetryClient(Client());
+      String token = await getToken(client);
+
+      final videos = await getVideosFromChildren(
+          mediaItem.driveId, mediaItem.onedriveItemId, token);
+
+      return videos;
+    } catch (e) {
+      _talker.error(e);
+      _talker.error(StackTrace.current);
+      return [];
+    } finally {
+      final end = DateTime.now();
+      _talker.info('Time taken: ${end.difference(start).inSeconds} seconds');
+    }
+  }
+
+  Future<List<Video>> getVideosFromChildren(
+      String driveId, String itemId, String token) async {
+    List<Video> videos = [];
+    final children = await getAllChildren(driveId, itemId, token);
+    final videoFormats = [
+      'video/mp4',
+      'video/mpeg',
+      'video/avi',
+      'video/wmv',
+      'video/mov',
+      'video/flv',
+      'video/webm',
+      'video/mkv'
+    ];
+    for (var child in children) {
+      if (child['file'] != null &&
+          videoFormats.contains(child['file']['mimeType'])) {
+        String downloadUrl;
+        if (child['@microsoft.graph.downloadUrl'] != null) {
+          downloadUrl = child['@microsoft.graph.downloadUrl'];
+        } else if (child['@content.downloadUrl'] != null) {
+          downloadUrl = child['@content.downloadUrl'];
+        } else {
+          continue;
+        }
+        Video video = Video(
+          url: downloadUrl,
+          title: child['name'],
+          id: child['id'],
+        );
+        videos.add(video);
+      } else if (child['folder'] != null) {
+        videos.addAll(await getVideosFromChildren(driveId, child['id'], token));
+      }
+    }
+    return videos;
+  }
+
+  Future<List<dynamic>> getAllChildren(
+      String driveId, String itemId, String token) async {
+    final RetryClient client = RetryClient(Client());
+    String nextLink =
+        'https://graph.microsoft.com/beta/drives/$driveId/items/$itemId/children';
+    List<dynamic> children = [];
+    do {
+      final Response res = await client.get(Uri.parse(nextLink),
+          headers: {'Authorization': 'Bearer $token'});
+      final d = jsonDecode(res.body);
+      children.addAll(d['value']);
+
+      if (d['@odata.nextLink'] != null) {
+        nextLink = d['@odata.nextLink'];
+      } else {
+        nextLink = '';
+      }
+    } while (nextLink.isNotEmpty);
+    return children;
+  }
+
+  Future<String> getToken(RetryClient client) async {
+    String clientId = dotenv.env['CLIENT_ID'] ?? '';
+    String clientSecret = dotenv.env['CLIENT_SECRET'] ?? '';
+    String tenantId = dotenv.env['TENANT_ID'] ?? '';
+
+    Response res = await client.post(
+      Uri.parse(
+          'https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token'),
+      body: {
+        'client_id': clientId,
+        'scope': 'https://graph.microsoft.com/.default',
+        'client_secret': clientSecret,
+        'grant_type': 'client_credentials'
+      },
+    );
+
+    if (res.statusCode != 200) {
+      _talker.error("Failed to get token: ${res.body}");
+      return '';
+    }
+
+    Map<String, dynamic> data = jsonDecode(res.body);
+
+    return data['access_token'];
   }
 
   Future<List<MediaItem>> getMediaItemsByLetter(String letter,

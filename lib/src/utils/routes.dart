@@ -7,6 +7,7 @@ import 'package:onedrive_netflix/src/features/login/presentation/screens/login_s
 import 'package:onedrive_netflix/src/features/login/services/auth.dart';
 import 'package:onedrive_netflix/src/features/media/presentation/screens/media_details_page.dart';
 import 'package:onedrive_netflix/src/features/search/presentation/screens/search_page.dart';
+import 'package:onedrive_netflix/src/features/video/presentation/screens/video_player_page.dart';
 import 'package:onedrive_netflix/src/utils/constants.dart';
 
 class Routes {
@@ -41,6 +42,10 @@ class Routes {
       GoRoute(
         path: Constants.mediaDetailsRoute,
         builder: (context, state) => const MediaDetailsPage(),
+      ),
+      GoRoute(
+        path: Constants.videoPlayerRoute,
+        builder: (context, state) => const VideoPlayerPage(),
       ),
     ],
     initialLocation: GlobalAuthService.instance.isLoggedIn
