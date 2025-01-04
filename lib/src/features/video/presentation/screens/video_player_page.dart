@@ -1,7 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:onedrive_netflix/src/features/login/services/auth.dart';
+import 'package:onedrive_netflix/src/models/history.model.dart';
+import 'package:onedrive_netflix/src/models/user.model.dart';
 import 'package:onedrive_netflix/src/models/video.model.dart';
+import 'package:onedrive_netflix/src/services/database_service.dart';
+import 'package:onedrive_netflix/src/utils/collection_names.dart';
 import 'package:video_player/video_player.dart';
 import 'package:go_router/go_router.dart';
 import 'package:onedrive_netflix/src/services/mediaitem_query_service.dart';
@@ -15,6 +20,7 @@ class VideoPlayerPage extends StatefulWidget {
 }
 
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
+  final DatabaseService _databaseService = DatabaseService();
   VideoPlayerController? _videoPlayerController;
   List<Video> _episodes = [];
   final Talker _talker = Talker();
@@ -33,6 +39,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   final FocusNode _speedFocusNode = FocusNode();
   final FocusNode _backFocusNode = FocusNode();
   final FocusNode _nextEpisodeFocusNode = FocusNode();
+  final FocusNode _moreEpisodesFocusNode = FocusNode();
+  final FocusNode _subtitlesFocusNode = FocusNode();
+  Timer? _watchHistoryTimer;
 
   @override
   void initState() {
@@ -43,6 +52,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     _speedFocusNode.addListener(_onFocusChange);
     _backFocusNode.addListener(_onFocusChange);
     _nextEpisodeFocusNode.addListener(_onFocusChange);
+    _moreEpisodesFocusNode.addListener(_onFocusChange);
+    _subtitlesFocusNode.addListener(_onFocusChange);
     _playPauseFocusNode.requestFocus();
   }
 
@@ -56,18 +67,23 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   void dispose() {
     _videoPlayerController?.dispose();
     _hideTimer?.cancel();
+    _watchHistoryTimer?.cancel();
     _playPauseFocusNode.removeListener(_onFocusChange);
     _skipBackFocusNode.removeListener(_onFocusChange);
     _skipForwardFocusNode.removeListener(_onFocusChange);
     _speedFocusNode.removeListener(_onFocusChange);
     _backFocusNode.removeListener(_onFocusChange);
     _nextEpisodeFocusNode.removeListener(_onFocusChange);
+    _moreEpisodesFocusNode.removeListener(_onFocusChange);
+    _subtitlesFocusNode.removeListener(_onFocusChange);
     _playPauseFocusNode.dispose();
     _skipBackFocusNode.dispose();
     _skipForwardFocusNode.dispose();
     _speedFocusNode.dispose();
     _backFocusNode.dispose();
     _nextEpisodeFocusNode.dispose();
+    _moreEpisodesFocusNode.dispose();
+    _subtitlesFocusNode.dispose();
     super.dispose();
   }
 
@@ -124,9 +140,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     context.pop();
   }
 
-  void _handleNextEpisode() async {
+  void _handleNextEpisode(int episodeIndex) async {
+    if (episodeIndex == _currentEpisode) return;
+
+    // Save current progress before switching episodes
+    await _updateWatchHistory();
+
     setState(() {
-      _currentEpisode++;
+      _currentEpisode = episodeIndex;
     });
 
     if (_currentEpisode >= _episodes.length) {
@@ -138,12 +159,34 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
     _videoPlayerController?.dispose();
     _videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(_episodes[_currentEpisode].url)
-    );
+        Uri.parse(_episodes[_currentEpisode].url));
 
     await _videoPlayerController!.initialize();
     await _videoPlayerController!.play();
+
+    // Restart the watch history timer
+    _watchHistoryTimer?.cancel();
+    _watchHistoryTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _updateWatchHistory(),
+    );
+
     _resetControlsTimer();
+  }
+
+  void _showEpisodesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black87,
+      builder: (context) => EpisodesBottomSheet(
+        episodes: _episodes,
+        currentEpisode: _currentEpisode,
+        onEpisodeSelected: (index) {
+          Navigator.pop(context);
+          _handleNextEpisode(index);
+        },
+      ),
+    );
   }
 
   @override
@@ -164,10 +207,18 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       });
 
       final videos = await _mediaItemQueryService.getListOfUrls(mediaId);
+      User? getUser = await GlobalAuthService.instance.getUser();
+
+      // getting watch history for current user for this media item
+      final watchHistory = await _databaseService.getDataWithFilter(
+          CollectionNames.watchHistory,
+          'mediaId_userId',
+          '${mediaId}_${getUser!.id}');
+
       setState(() {
-        _currentEpisode = 0;
         _episodes = videos;
       });
+
       if (!mounted) return;
 
       if (videos.isEmpty) {
@@ -178,13 +229,46 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         return;
       }
 
+      // Set initial episode and position based on watch history
+      int startEpisode = 0;
+      Duration startPosition = Duration.zero;
+
+      if (watchHistory.value != null) {
+        final historyData = watchHistory.value as Map<dynamic, dynamic>;
+        String id = historyData.keys.first;
+        Map<dynamic, dynamic> values = historyData.values.first;
+        final history = History.fromMap(id, values);
+
+        // Find the episode index that matches the saved onedriveItemId
+        final savedEpisodeIndex = _episodes
+            .indexWhere((episode) => episode.id == history.onedriveItemId);
+
+        if (savedEpisodeIndex != -1) {
+          startEpisode = savedEpisodeIndex;
+          startPosition = Duration(seconds: history.timestamp);
+        }
+      }
+
+      setState(() {
+        _currentEpisode = startEpisode;
+      });
+
       _talker.info('Loading video: ${videos[_currentEpisode].url}');
       _videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(_episodes[_currentEpisode].url),
       );
 
       await _videoPlayerController!.initialize();
+      await _videoPlayerController!.seekTo(startPosition);
       await _videoPlayerController!.play();
+
+      // Start the watch history timer
+      _watchHistoryTimer?.cancel();
+      _watchHistoryTimer = Timer.periodic(
+        const Duration(seconds: 5),
+        (_) => _updateWatchHistory(),
+      );
+
       _resetControlsTimer();
 
       if (!mounted) return;
@@ -193,8 +277,55 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       if (!mounted) return;
       setState(() {
         _hasError = true;
-        _errorMessage = 'Error loading video: $e';
+        _errorMessage =
+            'Error loading video: $e\nStack Trace: ${StackTrace.current}';
       });
+    }
+  }
+
+  Future<void> _updateWatchHistory() async {
+    if (_videoPlayerController == null || !mounted) return;
+
+    final mediaId = GoRouterState.of(context).pathParameters['mediaId'] ?? '';
+    final user = await GlobalAuthService.instance.getUser();
+    if (user == null) return;
+
+    final currentPosition = _videoPlayerController!.value.position.inSeconds;
+
+    // First try to get existing watch history
+    final watchHistory = await _databaseService.getDataWithFilter(
+        CollectionNames.watchHistory,
+        'mediaId_userId',
+        '${mediaId}_${user.id}');
+
+    History history;
+    if (watchHistory.value != null) {
+      final historyData = watchHistory.value as Map<dynamic, dynamic>;
+      String id = historyData.keys.first;
+      Map<dynamic, dynamic> values = historyData.values.first;
+      // Update existing history
+      history = History.fromMap(id, values);
+      history.userId = user.id;
+      history.lastWatchedAt = DateTime.now();
+      history.onedriveItemId = _episodes[_currentEpisode].id;
+      history.timestamp = currentPosition;
+      history.modifiedAt = DateTime.now();
+
+      await _databaseService.updateData(
+          '${CollectionNames.watchHistory}/$id', history.toJson());
+    } else {
+      // Create new history if none exists
+      history = History()
+        ..mediaId_userId = '${mediaId}_${user.id}'
+        ..lastWatchedAt = DateTime.now()
+        ..userId = user.id
+        ..onedriveItemId = _episodes[_currentEpisode].id
+        ..timestamp = currentPosition
+        ..createdAt = DateTime.now()
+        ..modifiedAt = DateTime.now();
+
+      await _databaseService.saveData(
+          CollectionNames.watchHistory, history.toJson());
     }
   }
 
@@ -220,19 +351,19 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       body: KeyboardListener(
         focusNode: FocusNode(),
         onKeyEvent: (event) {
-          if (event is KeyDownEvent) {
-            _resetControlsTimer();
+          _resetControlsTimer();
 
-            // check if none of the focus nodes are focused
-            if (!_playPauseFocusNode.hasFocus &&
-                !_skipBackFocusNode.hasFocus &&
-                !_skipForwardFocusNode.hasFocus &&
-                !_speedFocusNode.hasFocus &&
-                !_backFocusNode.hasFocus &&
-                !_nextEpisodeFocusNode.hasFocus) {
-              _playPauseFocusNode.requestFocus();
-              setState(() {});
-            }
+          // check if none of the focus nodes are focused
+          if (!_playPauseFocusNode.hasFocus &&
+              !_skipBackFocusNode.hasFocus &&
+              !_skipForwardFocusNode.hasFocus &&
+              !_speedFocusNode.hasFocus &&
+              !_backFocusNode.hasFocus &&
+              !_nextEpisodeFocusNode.hasFocus &&
+              !_moreEpisodesFocusNode.hasFocus &&
+              !_subtitlesFocusNode.hasFocus) {
+            _playPauseFocusNode.requestFocus();
+            setState(() {});
           }
         },
         child: GestureDetector(
@@ -348,6 +479,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                         LogicalKeyboardKey.arrowRight) {
                                       _playPauseFocusNode.requestFocus();
                                       return KeyEventResult.handled;
+                                    } else if (event.logicalKey ==
+                                        LogicalKeyboardKey.arrowDown) {
+                                      _moreEpisodesFocusNode.requestFocus();
+                                      return KeyEventResult.handled;
                                     }
                                   }
                                   return KeyEventResult.ignored;
@@ -393,6 +528,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                     } else if (event.logicalKey ==
                                         LogicalKeyboardKey.arrowUp) {
                                       _speedFocusNode.requestFocus();
+                                      return KeyEventResult.handled;
+                                    } else if (event.logicalKey ==
+                                        LogicalKeyboardKey.arrowDown) {
+                                      _moreEpisodesFocusNode.requestFocus();
                                       return KeyEventResult.handled;
                                     }
                                   }
@@ -444,6 +583,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                     } else if (event.logicalKey ==
                                         LogicalKeyboardKey.arrowUp) {
                                       _speedFocusNode.requestFocus();
+                                      return KeyEventResult.handled;
+                                    } else if (event.logicalKey ==
+                                        LogicalKeyboardKey.arrowDown) {
+                                      _subtitlesFocusNode.requestFocus();
                                       return KeyEventResult.handled;
                                     }
                                   }
@@ -537,8 +680,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                         LogicalKeyboardKey.enter ||
                                     event.logicalKey ==
                                         LogicalKeyboardKey.gameButtonA) {
-                                  // TODO: Implement next episode functionality
-                                  _handleNextEpisode();
+                                  _handleNextEpisode(_currentEpisode + 1);
                                   return KeyEventResult.handled;
                                 }
 
@@ -562,8 +704,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                                 icon: const Icon(Icons.skip_next),
                                 color: Colors.white54,
                                 onPressed: () {
-                                  _handleNextEpisode();
-                                }, // Disabled for now
+                                  _handleNextEpisode(_currentEpisode + 1);
+                                },
                               ),
                             ),
                           ),
@@ -574,14 +716,129 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                           bottom: 20,
                           left: 20,
                           right: 20,
-                          child: VideoProgressIndicator(
-                            _videoPlayerController!,
-                            allowScrubbing: true,
-                            colors: const VideoProgressColors(
-                              playedColor: Colors.red,
-                              bufferedColor: Colors.white24,
-                              backgroundColor: Colors.white12,
-                            ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              VideoProgressIndicator(
+                                _videoPlayerController!,
+                                allowScrubbing: true,
+                                colors: const VideoProgressColors(
+                                  playedColor: Colors.red,
+                                  bufferedColor: Colors.white24,
+                                  backgroundColor: Colors.white12,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Focus(
+                                    focusNode: _moreEpisodesFocusNode,
+                                    onKeyEvent: (node, event) {
+                                      if (event is KeyDownEvent) {
+                                        _resetControlsTimer();
+                                        if (event.logicalKey ==
+                                                LogicalKeyboardKey.select ||
+                                            event.logicalKey ==
+                                                LogicalKeyboardKey.enter ||
+                                            event.logicalKey ==
+                                                LogicalKeyboardKey
+                                                    .gameButtonA) {
+                                          _showEpisodesBottomSheet();
+                                          return KeyEventResult.handled;
+                                        }
+
+                                        if (event.logicalKey ==
+                                            LogicalKeyboardKey.arrowRight) {
+                                          _subtitlesFocusNode.requestFocus();
+                                          return KeyEventResult.handled;
+                                        } else if (event.logicalKey ==
+                                            LogicalKeyboardKey.arrowUp) {
+                                          _playPauseFocusNode.requestFocus();
+                                          return KeyEventResult.handled;
+                                        }
+                                      }
+                                      return KeyEventResult.ignored;
+                                    },
+                                    child: Container(
+                                      decoration: _getFocusDecoration(
+                                        _moreEpisodesFocusNode.hasFocus,
+                                        isCircular: false,
+                                      ),
+                                      child: TextButton.icon(
+                                        icon: Icon(
+                                          Icons.list,
+                                          color: _getFocusTextColor(
+                                              _moreEpisodesFocusNode.hasFocus),
+                                        ),
+                                        label: Text(
+                                          'More Episodes',
+                                          style: TextStyle(
+                                            color: _getFocusTextColor(
+                                                _moreEpisodesFocusNode
+                                                    .hasFocus),
+                                          ),
+                                        ),
+                                        onPressed: _showEpisodesBottomSheet,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Focus(
+                                    focusNode: _subtitlesFocusNode,
+                                    onKeyEvent: (node, event) {
+                                      if (event is KeyDownEvent) {
+                                        _resetControlsTimer();
+                                        if (event.logicalKey ==
+                                                LogicalKeyboardKey.select ||
+                                            event.logicalKey ==
+                                                LogicalKeyboardKey.enter ||
+                                            event.logicalKey ==
+                                                LogicalKeyboardKey
+                                                    .gameButtonA) {
+                                          // TODO: Implement subtitles functionality
+                                          return KeyEventResult.handled;
+                                        }
+
+                                        if (event.logicalKey ==
+                                            LogicalKeyboardKey.arrowLeft) {
+                                          _moreEpisodesFocusNode.requestFocus();
+                                          return KeyEventResult.handled;
+                                        } else if (event.logicalKey ==
+                                            LogicalKeyboardKey.arrowUp) {
+                                          _skipForwardFocusNode.requestFocus();
+                                          return KeyEventResult.handled;
+                                        }
+                                      }
+                                      return KeyEventResult.ignored;
+                                    },
+                                    child: Container(
+                                      decoration: _getFocusDecoration(
+                                        _subtitlesFocusNode.hasFocus,
+                                        isCircular: false,
+                                      ),
+                                      child: TextButton.icon(
+                                        icon: Icon(
+                                          Icons.subtitles,
+                                          color: _getFocusTextColor(
+                                              _subtitlesFocusNode.hasFocus),
+                                        ),
+                                        label: Text(
+                                          'Subtitles',
+                                          style: TextStyle(
+                                            color: _getFocusTextColor(
+                                                _subtitlesFocusNode.hasFocus),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          // TODO: Implement subtitles functionality
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -591,6 +848,176 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class EpisodesBottomSheet extends StatefulWidget {
+  final List<Video> episodes;
+  final int currentEpisode;
+  final Function(int) onEpisodeSelected;
+
+  const EpisodesBottomSheet({
+    super.key,
+    required this.episodes,
+    required this.currentEpisode,
+    required this.onEpisodeSelected,
+  });
+
+  @override
+  State<EpisodesBottomSheet> createState() => _EpisodesBottomSheetState();
+}
+
+class _EpisodesBottomSheetState extends State<EpisodesBottomSheet> {
+  final ScrollController _scrollController = ScrollController();
+  int _focusedIndex = 0;
+  static const double _verticalPadding = 12.0;
+  static const double _itemContentHeight = 24.0; // Height of text/icon
+  static const double _headerHeight = 52.0; // Height of the "Episodes" header
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedIndex = widget.currentEpisode;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToIndex(_focusedIndex);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  double get _itemHeight => _verticalPadding * 2 + _itemContentHeight;
+
+  double get _totalHeight {
+    final itemsHeight = widget.episodes.length * _itemHeight;
+    return _headerHeight +
+        itemsHeight.clamp(0, 400); // Max height of 400 + header
+  }
+
+  void _scrollToIndex(int index) {
+    if (!_scrollController.hasClients) return;
+
+    final targetOffset = index * _itemHeight;
+
+    _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black87,
+      ),
+      height: _totalHeight,
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Episodes',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: widget.episodes.length,
+              itemBuilder: (context, index) {
+                final episode = widget.episodes[index];
+                final isSelected = index == widget.currentEpisode;
+
+                return Focus(
+                  autofocus: isSelected,
+                  onFocusChange: (hasFocus) {
+                    if (hasFocus) {
+                      setState(() {
+                        _focusedIndex = index;
+                      });
+                      _scrollToIndex(index);
+                    }
+                  },
+                  onKeyEvent: (node, event) {
+                    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                    if (event.logicalKey == LogicalKeyboardKey.select ||
+                        event.logicalKey == LogicalKeyboardKey.enter ||
+                        event.logicalKey == LogicalKeyboardKey.gameButtonA) {
+                      widget.onEpisodeSelected(index);
+                      return KeyEventResult.handled;
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: Builder(
+                    builder: (context) {
+                      final isFocused = Focus.of(context).hasFocus;
+
+                      return InkWell(
+                        onTap: () => widget.onEpisodeSelected(index),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? Colors.white.withAlpha(150)
+                                : Colors.transparent,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.white.withAlpha(150),
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              if (isSelected)
+                                const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.red,
+                                  size: 20,
+                                )
+                              else
+                                Text(
+                                  '${index + 1}',
+                                  style: TextStyle(
+                                    color: Colors.white.withAlpha(150),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  episode.title,
+                                  style: TextStyle(
+                                    color:
+                                        isSelected ? Colors.red : Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

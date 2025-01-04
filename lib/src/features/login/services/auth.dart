@@ -1,4 +1,9 @@
+import 'dart:convert';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:onedrive_netflix/src/models/user.model.dart';
+import 'package:onedrive_netflix/src/services/database_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talker/talker.dart';
 
@@ -6,6 +11,7 @@ class GlobalAuthService {
   // Singleton instance
   static final GlobalAuthService instance = GlobalAuthService._();
   final Talker _talker = Talker();
+  final DatabaseService _databaseService = DatabaseService();
 
   static const List<String> scopes = [
     'https://www.googleapis.com/auth/contacts.readonly'
@@ -29,8 +35,6 @@ class GlobalAuthService {
         return null;
       }
 
-      saveUser(account);
-
       return account;
     } catch (e) {
       _talker.error("Error signing in with Google: $e");
@@ -38,21 +42,28 @@ class GlobalAuthService {
     }
   }
 
-  Future<void> saveUser(GoogleSignInAccount account) async {
+  Future<void> saveUser(User user) async {
     _isLoggedIn = true;
+    _talker.info("Saving user: ${jsonEncode(user.toJson())}");
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('user', account.toString());
-    _talker.info("User saved: ${account.toString()}");
+    prefs.setString('user', jsonEncode(user.toJson()));
   }
 
-  Future<String?> getUser() async {
+  Future<User?> getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? json = prefs.getString('user');
     _talker.info("User retrieved: $json");
 
     if (json != null) {
       _isLoggedIn = true;
-      return json;
+      User localUser = User.fromJson(json);
+
+      DataSnapshot userFromDatabase =
+          await _databaseService.getData('users/${localUser.id}');
+      if (userFromDatabase.exists) {
+        return User.fromMap(userFromDatabase.value as Map<dynamic, dynamic>,
+            userFromDatabase.key ?? '');
+      }
     }
     return null;
   }

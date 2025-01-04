@@ -87,7 +87,15 @@ class _MediaDetailsPageState extends State<MediaDetailsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 24),
+                      // add a back button
+                      IconButton(
+                        onPressed: () {
+                          GoRouter.of(context).pop();
+                        },
+                        icon: const Icon(Icons.arrow_back),
+                      ),
+                      const SizedBox(height: 16),
                       Text(
                         _mediaItem!.title,
                         style:

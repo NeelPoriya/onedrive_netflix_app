@@ -36,16 +36,17 @@ class SettingsController with ChangeNotifier {
       _talker.info('Loading ThemeMode...');
       _themeMode = await _settingsService.themeMode();
 
+      _talker.info('Loading database...');
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      
       _talker.info('Loading user');
       await GlobalAuthService.instance.getUser();
 
       _talker.info('Loading environment variables...');
       await dotenv.load(fileName: '.env');
 
-      _talker.info('Loading database...');
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
     } catch (e) {
       _talker.error('Error loading settings: $e');
       rethrow;

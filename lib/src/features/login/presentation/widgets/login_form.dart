@@ -36,8 +36,6 @@ class LoginFormState extends State<LoginForm> {
         return;
       }
 
-      await getUserFromDatabase(account.email);
-
       User? user = await getUserFromDatabase(account.email);
       DateTime currentTime = DateTime.now();
 
@@ -47,27 +45,32 @@ class LoginFormState extends State<LoginForm> {
         User newUser = User.withDetails(
           email: account.email,
           name: account.displayName ?? '',
+          photoUrl: account.photoUrl ?? '',
           createdAt: currentTime,
           updatedAt: currentTime,
           lastLogin: currentTime,
           isAdmin: false,
-          status: UserStatus.created,
+          status: UserStatus.pending,
         );
 
-        await Future.delayed(Duration(milliseconds: 5000));
-
-        _databaseService.saveData('users', newUser.toJson());
-        talker.info('User saved ${jsonEncode(newUser)}');
+        _databaseService.saveData('users', newUser.toJsonWithoutId());
+        talker.info('User saved ${jsonEncode(newUser.toJsonWithoutId())}');
       } else {
         talker.info('User found in database');
 
         user.lastLogin = currentTime;
         user.updatedAt = currentTime;
+        user.photoUrl = account.photoUrl ?? '';
 
-        await Future.delayed(Duration(milliseconds: 5000));
+        _databaseService.updateData('users/${user.id}', user.toJsonWithoutId());
+        talker.info('User updated ${jsonEncode(user.toJsonWithoutId())}');
+      }
 
-        _databaseService.updateData('users/${user.id}', user.toJson());
-        talker.info('User updated ${jsonEncode(user)}');
+      // get the user from the database using email
+      User? existingUser = await getUserFromDatabase(account.email);
+
+      if (existingUser != null) {
+        await GlobalAuthService.instance.saveUser(existingUser);
       }
 
       if (!mounted) return;

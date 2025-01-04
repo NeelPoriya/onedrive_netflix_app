@@ -29,10 +29,19 @@ class _TVImageSliderState extends State<TVImageSlider> {
   final int _paddingItems = 10;
   final double _itemTotalWidth = 250.0 + 16.0;
   bool _isFocused = false;
+  int? _longPressIndex;
 
   @override
   void initState() {
     super.initState();
+
+    _scrollController.addListener(() {
+      final maxScrollExtent =
+          (_itemTotalWidth * widget.mediaItems.length + 1) - _itemTotalWidth;
+      if (_scrollController.offset > maxScrollExtent) {
+        _scrollController.jumpTo(maxScrollExtent);
+      }
+    });
   }
 
   @override
@@ -151,23 +160,82 @@ class _TVImageSliderState extends State<TVImageSlider> {
                       context.push('/media/${widget.mediaItems[index].id}');
                     }
                   },
+                  onLongPress: () {
+                    setState(() {
+                      _longPressIndex = index;
+                    });
+                  },
+                  onLongPressEnd: (_) {
+                    setState(() {
+                      _longPressIndex = null;
+                    });
+                  },
                   child: Container(
                     margin: const EdgeInsets.all(8),
                     width: 250,
+                    height: 150,
                     child: index < widget.mediaItems.length
                         ? AnimatedScale(
-                            scale: _isFocused && _selectedIndex == index
+                            scale: (_isFocused && _selectedIndex == index) ||
+                                    _longPressIndex == index
                                 ? 1.05
                                 : 1.0,
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                Constants.tmdbImageEndpointW500 +
-                                    widget.mediaItems[index].backdropImage,
-                                fit: BoxFit.cover,
-                              ),
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      widget.mediaItems[index].backdropImage
+                                              .isEmpty
+                                          ? 'https://picsum.photos/seed/picsum/1920/1080'
+                                          : Constants.tmdbImageEndpointW500 +
+                                              widget.mediaItems[index]
+                                                  .backdropImage,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                if (_longPressIndex == index)
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withAlpha(150),
+                                          ],
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.all(8),
+                                      child: AnimatedOpacity(
+                                        opacity: _longPressIndex == index
+                                            ? 1.0
+                                            : 0.0,
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        child: Text(
+                                          widget.mediaItems[index].title,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                              ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           )
                         : const SizedBox(),
@@ -182,12 +250,47 @@ class _TVImageSliderState extends State<TVImageSlider> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.mediaItems.isNotEmpty && _selectedIndex >= 0
-                    ? widget.mediaItems[_selectedIndex].title
-                    : '',
-                style: Theme.of(context).textTheme.bodyMedium,
+              AnimatedOpacity(
+                opacity: _isFocused ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+                child: AnimatedSlide(
+                  offset: Offset(0, _isFocused ? 0 : 0.5),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: SizedBox(
+                    width: 250,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeInOut,
+                      switchOutCurve: Curves.easeInOut,
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.2, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        widget.mediaItems.isNotEmpty && _selectedIndex >= 0
+                            ? widget.mediaItems[_selectedIndex].title
+                            : '',
+                        key: ValueKey<int>(_selectedIndex),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

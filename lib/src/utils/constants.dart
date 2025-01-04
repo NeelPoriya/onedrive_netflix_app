@@ -15,6 +15,8 @@ class Constants {
 
   static const String videoPlayerRoute = '/play/:mediaId';
 
+  static const String testRoute = '/test';
+
   static const String adminRoute = '/admin';
   static const String accountsRoute = '/admin/accounts';
   static const String foldersRoute = '/admin/folders';

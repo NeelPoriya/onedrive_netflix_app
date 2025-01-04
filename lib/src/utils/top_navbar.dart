@@ -1,11 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:onedrive_netflix/src/features/login/services/auth.dart';
+import 'package:onedrive_netflix/src/models/user.model.dart';
 
-class TopNavbar extends StatelessWidget {
+class TopNavbar extends StatefulWidget {
   const TopNavbar({
     super.key,
     required this.requestDrawerFocus,
   });
   final VoidCallback requestDrawerFocus;
+
+  @override
+  State<TopNavbar> createState() => _TopNavbarState();
+}
+
+class _TopNavbarState extends State<TopNavbar> {
+  User? user;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    User? getUser = await GlobalAuthService.instance.getUser();
+    if (!mounted) return;
+    setState(() {
+      user = getUser;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +41,7 @@ class TopNavbar extends StatelessWidget {
             IconButton(
               icon: Icon(Icons.menu),
               onPressed: () {
-                requestDrawerFocus();
+                widget.requestDrawerFocus();
               },
             ),
           ],
@@ -26,26 +49,61 @@ class TopNavbar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.settings,
-                )),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.notifications,
-              ),
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.person,
-              ),
-            ),
+            if (user != null && user!.isAdmin) NotificationButton(),
+            const SizedBox(width: 10),
+            user != null ? UserProfileButton(user: user) : const SizedBox(),
+            const SizedBox(width: 10),
           ],
         ),
       ],
+    );
+  }
+}
+
+class UserProfileButton extends StatelessWidget {
+  const UserProfileButton({
+    super.key,
+    required this.user,
+  });
+
+  final User? user;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: ClipRRect(
+        borderRadius: BorderRadius.all(
+          Radius.circular(48.0),
+        ),
+        child: Image.network(
+          user!.photoUrl,
+          width: 30,
+          height: 30,
+          fit: BoxFit.cover,
+        ),
+      ),
+      onPressed: () {
+        showAboutDialog(context: context);
+      },
+      selectedIcon: Icon(Icons.circle),
+    );
+  }
+}
+
+class NotificationButton extends StatelessWidget {
+  const NotificationButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        showAboutDialog(context: context);
+      },
+      icon: const Icon(
+        Icons.notifications,
+      ),
     );
   }
 }

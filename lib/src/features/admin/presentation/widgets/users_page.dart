@@ -45,7 +45,7 @@ class _UsersListViewState extends State<UsersListView> {
 
   final Talker talker = Talker();
 
-  UserStatus status = UserStatus.created;
+  UserStatus status = UserStatus.pending;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +95,7 @@ class _UsersListViewState extends State<UsersListView> {
                       initialSelection: UserStatus.values.firstWhere(
                         (status) =>
                             status.toString().split('.').last == user['status'],
-                        orElse: () => UserStatus.created,
+                        orElse: () => UserStatus.pending,
                       ),
                       onSelected: (dynamic status) async {
                         UserStatus newStatus = status as UserStatus;
