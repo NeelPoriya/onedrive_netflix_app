@@ -15,7 +15,7 @@ class LoginScreen extends StatelessWidget {
         ),
         Positioned.fill(
             child: Container(
-          color: Colors.black.withValues(alpha: 0.5),
+          color: Colors.black.withAlpha(100),
         )),
         Container(
           margin: const EdgeInsets.all(120.0),
