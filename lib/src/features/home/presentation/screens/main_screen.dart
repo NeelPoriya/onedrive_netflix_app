@@ -21,26 +21,6 @@ class _MainScreenState extends State<MainScreen> {
   final Talker _talker = Talker();
 
   @override
-  void initState() {
-    _homeFocusScopeNode.requestFocus();
-    super.initState();
-  }
-
-  @override
-  void didUpdateWidget(covariant MainScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _homeFocusScopeNode.requestFocus();
-    _drawerFocusScopeNode.unfocus();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _homeFocusScopeNode.requestFocus();
-    _drawerFocusScopeNode.unfocus();
-  }
-
-  @override
   void dispose() {
     _drawerFocusScopeNode.dispose();
     _homeFocusScopeNode.dispose();
@@ -73,7 +53,6 @@ class _MainScreenState extends State<MainScreen> {
         child: Stack(
           children: <Widget>[
             FocusScope(
-              autofocus: true,
               node: _homeFocusScopeNode,
               onKeyEvent: _onKeyForHomeScreenFocus,
               child: Stack(
@@ -108,6 +87,7 @@ class _MainScreenState extends State<MainScreen> {
                     _homeFocusScopeNode.requestFocus();
                     setState(() {});
                   },
+                  isDrawerOpen: _drawerFocusScopeNode.hasFocus,
                 ),
               ),
             ),

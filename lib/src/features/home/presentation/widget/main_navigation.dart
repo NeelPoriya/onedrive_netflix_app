@@ -6,7 +6,9 @@ import 'package:onedrive_netflix/src/utils/constants.dart';
 
 class MainNavigation extends StatefulWidget {
   final VoidCallback requestHomeFocus;
-  const MainNavigation({super.key, required this.requestHomeFocus});
+  final bool isDrawerOpen;
+  const MainNavigation(
+      {super.key, required this.requestHomeFocus, required this.isDrawerOpen});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -50,7 +52,7 @@ class _MainNavigationState extends State<MainNavigation> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextButton.icon(
-              autofocus: true,
+              autofocus: widget.isDrawerOpen,
               onPressed: () {
                 if (!Constants.homeRoute.contains(currentRoute)) {
                   GoRouter.of(context).push(Constants.homeRoute);
