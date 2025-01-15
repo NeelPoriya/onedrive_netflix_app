@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onedrive_netflix/src/features/login/services/auth.dart';
 import 'package:onedrive_netflix/src/models/user.model.dart';
+import 'package:onedrive_netflix/src/utils/notification_button.dart';
 
 class TopNavbar extends StatefulWidget {
   const TopNavbar({
@@ -86,24 +87,6 @@ class UserProfileButton extends StatelessWidget {
         showAboutDialog(context: context);
       },
       selectedIcon: Icon(Icons.circle),
-    );
-  }
-}
-
-class NotificationButton extends StatelessWidget {
-  const NotificationButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: () {
-        showAboutDialog(context: context);
-      },
-      icon: const Icon(
-        Icons.notifications,
-      ),
     );
   }
 }

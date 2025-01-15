@@ -44,7 +44,6 @@ class GlobalAuthService {
 
   Future<void> saveUser(User user) async {
     _isLoggedIn = true;
-    _talker.info("Saving user: ${jsonEncode(user.toJson())}");
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('user', jsonEncode(user.toJson()));
   }
@@ -52,7 +51,6 @@ class GlobalAuthService {
   Future<User?> getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? json = prefs.getString('user');
-    _talker.info("User retrieved: $json");
 
     if (json != null) {
       _isLoggedIn = true;
@@ -73,7 +71,5 @@ class GlobalAuthService {
     prefs.remove('user');
     _isLoggedIn = false;
     await _googleSignIn.signOut();
-
-    _talker.info("User signed out.");
   }
 }
