@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:onedrive_netflix/src/features/home/presentation/widget/main_navigation.dart';
+import 'package:onedrive_netflix/src/utils/device_utils.dart';
 import 'package:onedrive_netflix/src/utils/top_navbar.dart';
 import 'package:talker/talker.dart';
 
@@ -19,6 +20,7 @@ class _MainScreenState extends State<MainScreen> {
       FocusScopeNode(debugLabel: 'Drawer');
   final FocusScopeNode _homeFocusScopeNode = FocusScopeNode(debugLabel: 'Home');
   final Talker _talker = Talker();
+  bool isTV = false;
 
   @override
   void dispose() {
@@ -27,8 +29,17 @@ class _MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
+  Future<void> checkIsTV(BuildContext context) async {
+    bool TV = await DeviceUtils.isTVDevice(context);
+    setState(() {
+      isTV = TV;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    double offset = isTV ? 200 : MediaQuery.of(context).size.width;
+
     return Scaffold(
       key: _scaffoldKey,
       body: PopScope(
@@ -74,7 +85,7 @@ class _MainScreenState extends State<MainScreen> {
                 }),
             AnimatedPositioned(
               duration: const Duration(milliseconds: 200),
-              left: _drawerFocusScopeNode.hasFocus ? 0 : -200,
+              left: _drawerFocusScopeNode.hasFocus ? 0 : -offset,
               top: 0,
               bottom: 0,
               curve: Curves.easeInOut,

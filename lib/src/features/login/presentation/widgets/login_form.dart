@@ -88,7 +88,7 @@ class LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.tonalIcon(
+    return TextButton.icon(
       onPressed: loading
           ? null
           : () async {

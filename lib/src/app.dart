@@ -36,6 +36,67 @@ class _MyAppState extends State<MyApp> {
     // The ListenableBuilder Widget listens to the SettingsController for changes.
     // Whenever the user updates their settings, the MaterialApp is rebuilt.
 
+    final primaryColorScheme =
+        ColorScheme.fromSeed(seedColor: const Color.fromRGBO(229, 9, 20, 0));
+    final secondaryColorScheme = ColorScheme.fromSeed(seedColor: Colors.black);
+
+    // Combine them into a single color scheme
+    final colorScheme = primaryColorScheme.copyWith(
+      secondary: secondaryColorScheme.primary,
+      onSecondary: secondaryColorScheme.onPrimary,
+      brightness: Brightness.dark,
+      surface: Colors.black,
+    );
+
+    ThemeData themeData = ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      textTheme: ThemeData.dark().textTheme.apply(
+            fontFamily: 'GoogleSans',
+            bodyColor: Colors.white,
+            displayColor: Colors.white,
+          ),
+      buttonTheme: ButtonThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          elevation: 2,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          elevation: 2,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          elevation: 2,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        ),
+      ),
+    );
+
     return ListenableBuilder(
       listenable: widget.settingsController,
       builder: (BuildContext context, Widget? child) {
@@ -72,30 +133,8 @@ class _MyAppState extends State<MyApp> {
           // Define a light and dark color theme. Then, read the user's
           // preferred ThemeMode (light, dark, or system default) from the
           // SettingsController to display the correct theme.
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.red,
-              brightness: Brightness.dark,
-            ),
-            textTheme: ThemeData.dark().textTheme.apply(
-                  fontFamily: 'GoogleSans',
-                  bodyColor: Colors.white,
-                  displayColor: Colors.white,
-                ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.red,
-              brightness: Brightness.dark,
-            ),
-            textTheme: ThemeData.dark().textTheme.apply(
-                  fontFamily: 'GoogleSans',
-                  bodyColor: Colors.white,
-                  displayColor: Colors.white,
-                ),
-          ),
+          theme: themeData,
+          darkTheme: themeData,
           themeMode: widget.settingsController.themeMode,
 
           // Define a function to handle named routes in order to support
